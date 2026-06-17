@@ -1,7 +1,10 @@
+const crypto = require('crypto');
+global.crypto = crypto;
+
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, Browsers } = require('@whiskeysockets/baileys');
 const pino = require('pino');
-const os = require('os');
 const fs = require('fs');
+const os = require('os');
 
 const BOT_NAME = process.env.BOT_NAME || 'MOMO XMD';
 const OWNER_NAME = process.env.OWNER_NAME || 'MOMO47';
@@ -10,9 +13,9 @@ const PREFIX = '.';
 const MODE = 'Public';
 const VERSION = '1.0.0';
 
-console.log(`\n╔══════════╗`);
-console.log(`║ ${BOT_NAME} BOT STARTING ║`);
-console.log(`╚══════════╝\n`);
+console.log(`\n╭─────────────────────╮`);
+console.log(`│ ${BOT_NAME} BOT STARTING │`);
+console.log(`╰─────────────────────╯\n`);
 
 async function startBot() {
     const { state, saveCreds } = await useMultiFileAuthState('./auth');
@@ -21,20 +24,19 @@ async function startBot() {
         logger: pino({ level: 'silent' }),
         browser: Browsers.macOS('Safari'),
         auth: state,
-        printQRInTerminal: false
+        printQRInTerminal: false,
     });
 
-    // PAIRING CODE SYSTEM - Hii ndio itakuletea code kwenye logs
+    // PAIRING CODE SYSTEM
     if (!fs.existsSync('./auth/creds.json')) {
         await new Promise(resolve => setTimeout(resolve, 3000));
         try {
             const code = await sock.requestPairingCode(OWNER_NUMBER);
-            console.log(`\n┏━━━━━━━━━━┓`);
-            console.log(`┃ ${BOT_NAME} PAIRING CODE`);
-            console.log(`┣━━━━━━━━━━┫`);
-            console.log(`┃ CODE: ${code}`);
-            console.log(`┃ Nenda WhatsApp > Settings > Linked Devices > Link Device`);
-            console.log(`┗━━━━━━━━━━┛\n`);
+            console.log('\n╭─────────────────────╮');
+            console.log(`│ ${BOT_NAME} PAIRING CODE │`);
+            console.log('╰─────────────────────╯');
+            console.log(`CODE: ${code}`);
+            console.log('Nenda WhatsApp > Settings > Linked Devices > Link Device\n');
         } catch (err) {
             console.log('Pairing code error:', err);
         }
@@ -44,7 +46,7 @@ async function startBot() {
         const { connection, lastDisconnect } = update;
         if (connection === 'open') {
             console.log(`✅ ${BOT_NAME} IS ONLINE`);
-            console.log(`👤 Owner: ${OWNER_NAME}`);
+            console.log(`👑 Owner: ${OWNER_NAME}`);
             console.log(`📱 Number: ${OWNER_NUMBER}`);
         }
         if (connection === 'close') {
@@ -70,73 +72,72 @@ async function startBot() {
             const ramBar = '█'.repeat(Math.floor(ramPercent / 10)) + '░'.repeat(10 - Math.floor(ramPercent / 10));
             const speed = (Math.random() * 0.9 + 0.2).toFixed(4);
 
-            const menu = `┏▣ ◈ *${BOT_NAME}* ◈
-┃ *ᴏᴡɴᴇʀ* : ${OWNER_NAME}
-┃ *ᴘʀᴇғɪx* : [ ${PREFIX} ]
-┃ *ʜᴏsᴛ* : Heroku
-┃ *ᴘʟᴜɢɪɴs* : 331
-┃ *ᴍᴏᴅᴇ* : ${MODE}
-┃ *ᴠᴇʀsɪᴏɴ* : ${VERSION}
-┃ *sᴘᴇᴅ* : ${speed} ms
-┃ *ᴜsᴀɢᴇ* : ${ramUsed} MB of ${ramTotal} GB
-┃ *ʀᴀᴍ:* [${ramBar}] ${ramPercent}%
-┗▣
+            const menu = `╭── *${BOT_NAME}* ──
+│ 👑 *OWNER*: ${OWNER_NAME}
+│ 📌 *PREFIX*: [ ${PREFIX} ]
+│ 🖥️ *HOST*: Heroku
+│ ⚡ *PING*: 331 ms
+│ 🔧 *MODE*: ${MODE}
+│ 📦 *VERSION*: ${VERSION}
+│ 💾 *RAM*: ${ramUsed} MB of ${ramTotal} GB
+│ ${ramBar} ${ramPercent}%
+╰─────────────────
 
-┏▣ ◈ *AI MENU* ◈
-│➽ analyze
-│➽ blackbox
-│➽ code
-│➽ dalle
-│➽ deepseek
-│➽ gemini
-│➽ generate
-│➽ gpt
-│➽ story
-│➽ summarize
-│➽ teach
-│➽ translate2
-┗▣
+╭─ *AI MENU* ─
+│ ▸ analyze
+│ ▸ blackbox
+│ ▸ code
+│ ▸ dalle
+│ ▸ deepseek
+│ ▸ gemini
+│ ▸ generate
+│ ▸ gpt
+│ ▸ story
+│ ▸ summarize
+│ ▸ teach
+│ ▸ translate2
+╰────────────
 
-┏▣ ◈ *AUDIO MENU* ◈
-│➽ bass
-│➽ blown
-│➽ deep
-│➽ earrape
-│➽ reverse
-│➽ robot
-│➽ tomp3
-│➽ toptt
-│➽ volaudio
-┗▣
+╭─ *AUDIO MENU* ─
+│ ▸ bass
+│ ▸ blown
+│ ▸ deep
+│ ▸ earrape
+│ ▸ reverse
+│ ▸ robot
+│ ▸ tomp3
+│ ▸ toptt
+│ ▸ volaudio
+╰──────────────
 
-┏▣ ◈ *DOWNLOAD MENU* ◈
-│➽ apk
-│➽ download
-│➽ facebook
-│➽ gdrive
-│➽ gitclone
-│➽ image
-│➽ instagram
-│➽ mediafire
-│➽ pin
-│➽ savestatus
-│➽ song
-│➽ tiktok
-│➽ twitter
-│➽ video
-│➽ xvideo
-┗▣
+╭─ *DOWNLOAD MENU* ─
+│ ▸ apk
+│ ▸ download
+│ ▸ facebook
+│ ▸ gdrive
+│ ▸ gitclone
+│ ▸ image
+│ ▸ instagram
+│ ▸ mediafire
+│ ▸ pin
+│ ▸ savestatus
+│ ▸ song
+│ ▸ tiktok
+│ ▸ twitter
+│ ▸ video
+│ ▸ xvideo
+╰──────────────────
 
-┏▣ ◈ *OWNER MENU* ◈
-│➽ restart
-│➽ update
-│➽ setbotname
-│➽ setownername
-│➽ setownernumber
-│➽ mode
-┗▣
+╭─ *OWNER MENU* ─
+│ ▸ restart
+│ ▸ update
+│ ▸ setbotname
+│ ▸ setownername
+│ ▸ setownernumber
+│ ▸ mode
+╰─────────────
 
-_ᴘᴏᴡᴇʀᴇᴅ ʙʏ ${OWNER_NAME}_`;
+_${BOT_NAME} by ${OWNER_NAME}_`;
 
             await sock.sendMessage(msg.key.remoteJid, { text: menu }, { quoted: msg });
         }
