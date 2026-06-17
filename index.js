@@ -4,17 +4,13 @@ global.crypto = crypto;
 const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, Browsers } = require('@whiskeysockets/baileys');
 const pino = require('pino');
 const fs = require('fs');
-const os = require('os');
 
 const BOT_NAME = process.env.BOT_NAME || 'MOMO XMD';
 const OWNER_NAME = process.env.OWNER_NAME || 'MOMO47';
+const OWNER_NUMBER = process.env.OWNER_NUMBER || '255765409584';
 const PREFIX = '.';
-const MODE = 'Public';
-const VERSION = '1.0.0';
 
-console.log(`\n╭─────────────────────╮`);
-console.log(`│ ${BOT_NAME} BOT STARTING │`);
-console.log(`╰─────────────────────╯\n`);
+let hasPaired = false;
 
 async function startBot() {
     const { state, saveCreds } = await useMultiFileAuthState('./auth');
@@ -23,31 +19,34 @@ async function startBot() {
         logger: pino({ level: 'silent' }),
         browser: Browsers.macOS('Safari'),
         auth: state,
-        printQRInTerminal: true, // QR itatoka hapa
+        printQRInTerminal: false,
     });
 
-    sock.ev.on('connection.update', (update) => {
-        const { connection, lastDisconnect, qr } = update;
+    if (!fs.existsSync('./auth/creds.json') &&!hasPaired) {
+        hasPaired = true;
+        await new Promise(resolve => setTimeout(resolve, 15000));
 
-        if (qr) {
-            console.log('\n╭─────────────────────╮');
-            console.log(`│ SCAN QR CODE HAPA CHINI │`);
-            console.log('╰─────────────────────╯');
-            console.log('Nenda WhatsApp > Settings > Linked Devices > Link a Device');
+        try {
+            const code = await sock.requestPairingCode(OWNER_NUMBER);
+            console.log(`\nCODE: ${code.match(/.{1,4}/g).join('-')}\n`);
+
+            setTimeout(() => process.exit(0), 30000);
+        } catch (err) {
+            console.log('Error:', err.message);
         }
+    }
+
+    sock.ev.on('connection.update', (update) => {
+        const { connection, lastDisconnect } = update;
 
         if (connection === 'open') {
-            console.log(`✅ ${BOT_NAME} IS ONLINE`);
-            console.log(`👑 Owner: ${OWNER_NAME}`);
+            console.log(`${BOT_NAME} ONLINE`);
+            hasPaired = true;
         }
 
         if (connection === 'close') {
             const statusCode = lastDisconnect.error?.output?.statusCode;
-            const shouldReconnect = statusCode!== DisconnectReason.loggedOut;
-            
-            console.log('Connection closed, reconnecting...', shouldReconnect);
-            
-            if (shouldReconnect) {
+            if (statusCode!== DisconnectReason.loggedOut) {
                 setTimeout(() => startBot(), 5000);
             }
         }
@@ -56,47 +55,17 @@ async function startBot() {
     sock.ev.on('messages.upsert', async (m) => {
         const msg = m.messages[0];
         if (!msg.message || msg.key.fromMe) return;
-
         const text = msg.message.conversation || msg.message.extendedTextMessage?.text || '';
         if (!text.startsWith(PREFIX)) return;
-
         const cmd = text.slice(PREFIX.length).trim().toLowerCase();
 
-        if (cmd === 'menu' || cmd === 'help') {
-            const ramUsed = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2);
-            const ramTotal = (os.totalmem() / 1024 / 1024 / 1024).toFixed(0);
-            const ramPercent = Math.round((ramUsed / (ramTotal * 1024)) * 100);
-            const ramBar = '█'.repeat(Math.floor(ramPercent / 10)) + '░'.repeat(10 - Math.floor(ramPercent / 10));
-
-            const menu = `╭── *${BOT_NAME}* ──
-│ 👑 *OWNER*: ${OWNER_NAME}
-│ 📌 *PREFIX*: [ ${PREFIX} ]
-│ 🖥️ *HOST*: Heroku
-│ ⚡ *PING*: 331 ms
-│ 🔧 *MODE*: ${MODE}
-│ 📦 *VERSION*: ${VERSION}
-│ 💾 *RAM*: ${ramUsed} MB of ${ramTotal} GB
-│ ${ramBar} ${ramPercent}%
-╰─────────────────
-
-╭─ *AI MENU* ─
-│ ▸ analyze ▸ blackbox ▸ code ▸ dalle
-│ ▸ deepseek ▸ gemini ▸ generate ▸ gpt
-│ ▸ story ▸ summarize ▸ teach ▸ translate2
-╰────────────
-
-╭─ *DOWNLOAD MENU* ─
-│ ▸ tiktok ▸ instagram ▸ youtube ▸ twitter
-│ ▸ mediafire ▸ gdrive ▸ apk ▸ song
-╰──────────────────
-
-_${BOT_NAME} by ${OWNER_NAME}_`;
-
-            await sock.sendMessage(msg.key.remoteJid, { text: menu }, { quoted: msg });
+        if (cmd === 'menu') {
+            await sock.sendMessage(msg.key.remoteJid, {
+                text: `*${BOT_NAME} MENU*\n\n.menu\n.ping`
+            }, { quoted: msg });
         }
-
         if (cmd === 'ping') {
-            await sock.sendMessage(msg.key.remoteJid, { text: `Pong! ${Math.floor(Math.random() * 100)}ms` }, { quoted: msg });
+            await sock.sendMessage(msg.key.remoteJid, { text: 'Pong! ✅' }, { quoted: msg });
         }
     });
 
