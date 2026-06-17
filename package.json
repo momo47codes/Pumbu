@@ -1,7 +1,7 @@
 {
   "name": "momo-xmd",
   "version": "1.0.0",
-  "description": "MOMO XMD WhatsApp Bot by MOMO47",
+  "description": "MOMO XMD WhatsApp Bot",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
