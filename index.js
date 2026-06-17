@@ -8,7 +8,6 @@ const os = require('os');
 
 const BOT_NAME = process.env.BOT_NAME || 'MOMO XMD';
 const OWNER_NAME = process.env.OWNER_NAME || 'MOMO47';
-const OWNER_NUMBER = process.env.OWNER_NUMBER || '255765409584';
 const PREFIX = '.';
 const MODE = 'Public';
 const VERSION = '1.0.0';
@@ -17,8 +16,6 @@ console.log(`\n╭────────────────────�
 console.log(`│ ${BOT_NAME} BOT STARTING │`);
 console.log(`╰─────────────────────╯\n`);
 
-let pairingSent = false;
-
 async function startBot() {
     const { state, saveCreds } = await useMultiFileAuthState('./auth');
 
@@ -26,46 +23,32 @@ async function startBot() {
         logger: pino({ level: 'silent' }),
         browser: Browsers.macOS('Safari'),
         auth: state,
-        printQRInTerminal: false,
+        printQRInTerminal: true, // QR itatoka hapa
     });
 
-    // PAIRING CODE - Tuma mara 1 tu
-    if (!fs.existsSync('./auth/creds.json') &&!pairingSent) {
-        pairingSent = true;
-        await new Promise(resolve => setTimeout(resolve, 8000)); // Subiri 8sec
-        try {
-            const code = await sock.requestPairingCode(OWNER_NUMBER);
-            console.log('\n╭─────────────────────╮');
-            console.log(`│ ${BOT_NAME} PAIRING CODE │`);
-            console.log('╰─────────────────────╯');
-            console.log(`CODE: ${code}`);
-            console.log('Nenda WhatsApp > Settings > Linked Devices > Link Device\n');
-        } catch (err) {
-            console.log('Pairing code error:', err.message);
-            pairingSent = false; // Ijaribu tena kama imefail
-        }
-    }
-
     sock.ev.on('connection.update', (update) => {
-        const { connection, lastDisconnect } = update;
+        const { connection, lastDisconnect, qr } = update;
+
+        if (qr) {
+            console.log('\n╭─────────────────────╮');
+            console.log(`│ SCAN QR CODE HAPA CHINI │`);
+            console.log('╰─────────────────────╯');
+            console.log('Nenda WhatsApp > Settings > Linked Devices > Link a Device');
+        }
 
         if (connection === 'open') {
             console.log(`✅ ${BOT_NAME} IS ONLINE`);
             console.log(`👑 Owner: ${OWNER_NAME}`);
-            console.log(`📱 Number: ${OWNER_NUMBER}`);
         }
 
         if (connection === 'close') {
             const statusCode = lastDisconnect.error?.output?.statusCode;
             const shouldReconnect = statusCode!== DisconnectReason.loggedOut;
-
+            
             console.log('Connection closed, reconnecting...', shouldReconnect);
-
-            // Reconnect tu kama tumesha-pair na sio 428 error
-            if (shouldReconnect && pairingSent && statusCode!== 428) {
-                setTimeout(() => startBot(), 10000); // Subiri 10sec
-            } else if (statusCode === 428) {
-                console.log('428 Error: Futa auth folder + restart bot');
+            
+            if (shouldReconnect) {
+                setTimeout(() => startBot(), 5000);
             }
         }
     });
@@ -84,7 +67,6 @@ async function startBot() {
             const ramTotal = (os.totalmem() / 1024 / 1024 / 1024).toFixed(0);
             const ramPercent = Math.round((ramUsed / (ramTotal * 1024)) * 100);
             const ramBar = '█'.repeat(Math.floor(ramPercent / 10)) + '░'.repeat(10 - Math.floor(ramPercent / 10));
-            const speed = (Math.random() * 0.9 + 0.2).toFixed(4);
 
             const menu = `╭── *${BOT_NAME}* ──
 │ 👑 *OWNER*: ${OWNER_NAME}
@@ -98,58 +80,15 @@ async function startBot() {
 ╰─────────────────
 
 ╭─ *AI MENU* ─
-│ ▸ analyze
-│ ▸ blackbox
-│ ▸ code
-│ ▸ dalle
-│ ▸ deepseek
-│ ▸ gemini
-│ ▸ generate
-│ ▸ gpt
-│ ▸ story
-│ ▸ summarize
-│ ▸ teach
-│ ▸ translate2
+│ ▸ analyze ▸ blackbox ▸ code ▸ dalle
+│ ▸ deepseek ▸ gemini ▸ generate ▸ gpt
+│ ▸ story ▸ summarize ▸ teach ▸ translate2
 ╰────────────
 
-╭─ *AUDIO MENU* ─
-│ ▸ bass
-│ ▸ blown
-│ ▸ deep
-│ ▸ earrape
-│ ▸ reverse
-│ ▸ robot
-│ ▸ tomp3
-│ ▸ toptt
-│ ▸ volaudio
-╰──────────────
-
 ╭─ *DOWNLOAD MENU* ─
-│ ▸ apk
-│ ▸ download
-│ ▸ facebook
-│ ▸ gdrive
-│ ▸ gitclone
-│ ▸ image
-│ ▸ instagram
-│ ▸ mediafire
-│ ▸ pin
-│ ▸ savestatus
-│ ▸ song
-│ ▸ tiktok
-│ ▸ twitter
-│ ▸ video
-│ ▸ xvideo
+│ ▸ tiktok ▸ instagram ▸ youtube ▸ twitter
+│ ▸ mediafire ▸ gdrive ▸ apk ▸ song
 ╰──────────────────
-
-╭─ *OWNER MENU* ─
-│ ▸ restart
-│ ▸ update
-│ ▸ setbotname
-│ ▸ setownername
-│ ▸ setownernumber
-│ ▸ mode
-╰─────────────
 
 _${BOT_NAME} by ${OWNER_NAME}_`;
 
