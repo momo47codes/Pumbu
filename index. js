@@ -1,0 +1,128 @@
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason } = require('@whiskeysockets/baileys');
+const pino = require('pino');
+const os = require('os');
+
+const BOT_NAME = process.env.BOT_NAME || 'MOMO XMD';
+const OWNER_NAME = process.env.OWNER_NAME || 'MOMO47';
+const OWNER_NUMBER = process.env.OWNER_NUMBER || '255765409584';
+const PREFIX = '.';
+const MODE = 'Public';
+const VERSION = '1.0.0';
+
+async function startBot() {
+    const { state, saveCreds } = await useMultiFileAuthState('./auth');
+    
+    const sock = makeWASocket({
+        logger: pino({ level: 'silent' }),
+        printQRInTerminal: true,
+        auth: state
+    });
+
+    sock.ev.on('connection.update', (update) => {
+        const { connection } = update;
+        if(connection === 'open') {
+            console.log(`${BOT_NAME} IS ONLINE ✅`);
+        }
+    });
+
+    sock.ev.on('messages.upsert', async (m) => {
+        const msg = m.messages[0];
+        if(!msg.message || msg.key.fromMe) return;
+        
+        const text = msg.message.conversation || msg.message.extendedTextMessage?.text || '';
+        if(!text.startsWith(PREFIX)) return;
+        
+        const cmd = text.slice(PREFIX.length).trim().toLowerCase();
+        
+        if(cmd === 'menu' || cmd === 'help') {
+            const ramUsed = (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2);
+            const ramTotal = os.totalmem() / 1024 / 1024 / 1024;
+            const ramPercent = Math.round((ramUsed / (ramTotal * 1024)) * 100);
+            const ramBar = '█'.repeat(ramPercent/10) + '░'.repeat(10 - ramPercent/10);
+            const speed = (Math.random() * 1000).toFixed(4);
+            const plugins = 331;
+            
+            const menu = `┏▣ ◈ *${BOT_NAME}* ◈
+┃ *ᴏᴡɴᴇʀ* : ${OWNER_NAME}
+┃ *ᴘʀᴇғɪx* : [ ${PREFIX} ]
+┃ *ʜᴏsᴛ* : Heroku
+┃ *ᴘʟᴜɢɪɴs* : ${plugins}
+┃ *ᴍᴏᴅᴇ* : ${MODE}
+┃ *ᴠᴇʀsɪᴏɴ* : ${VERSION}
+┃ *sᴘᴇᴅ* : ${speed} ms
+┃ *ᴜsᴀɢᴇ* : ${ramUsed} MB of ${ramTotal.toFixed(0)} GB
+┃ *ʀᴀᴍ:* [${ramBar}] ${ramPercent}%
+┗▣ 
+
+┏▣ ◈ *AI MENU* ◈
+│➽ analyze
+│➽ blackbox
+│➽ code
+│➽ dalle
+│➽ deepseek
+│➽ doppleai
+│➽ gemini
+│➽ generate
+│➽ gpt
+│➽ programming
+│➽ recipe
+│➽ story
+│➽ summarize
+│➽ teach
+│➽ translate2
+┗▣ 
+
+┏▣ ◈ *AUDIO MENU* ◈
+│➽ bass
+│➽ blown
+│➽ deep
+│➽ earrape
+│➽ reverse
+│➽ robot
+│➽ tomp3
+│➽ toptt
+│➽ volaudio
+┗▣ 
+
+┏▣ ◈ *DOWNLOAD MENU* ◈
+│➽ apk
+│➽ download
+│➽ facebook
+│➽ gdrive
+│➽ gitclone
+│➽ image
+│➽ instagram
+│➽ itunes
+│➽ mediafire
+│➽ pin
+│➽ savestatus
+│➽ song
+│➽ song2
+│➽ telesticker
+│➽ tiktok
+│➽ tiktokaudio
+│➽ twitter
+│➽ video
+│➽ videodoc
+│➽ xvideo
+┗▣ 
+
+┏▣ ◈ *OWNER MENU* ◈
+│➽ restart
+│➽ update
+│➽ setbotname
+│➽ setownername
+│➽ setownernumber
+│➽ mode
+┗▣
+
+_ᴘᴏᴡᴇʀᴇᴅ ʙʏ ${OWNER_NAME}_`;
+
+            await sock.sendMessage(msg.key.remoteJid, { text: menu }, { quoted: msg });
+        }
+    });
+
+    sock.ev.on('creds.update', saveCreds);
+}
+
+startBot();
