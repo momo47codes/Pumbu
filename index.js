@@ -17,6 +17,8 @@ console.log(`\n╭────────────────────�
 console.log(`│ ${BOT_NAME} BOT STARTING │`);
 console.log(`╰─────────────────────╯\n`);
 
+let pairingSent = false;
+
 async function startBot() {
     const { state, saveCreds } = await useMultiFileAuthState('./auth');
 
@@ -27,9 +29,10 @@ async function startBot() {
         printQRInTerminal: false,
     });
 
-    // PAIRING CODE SYSTEM
-    if (!fs.existsSync('./auth/creds.json')) {
-        await new Promise(resolve => setTimeout(resolve, 3000));
+    // PAIRING CODE - Tuma mara 1 tu
+    if (!fs.existsSync('./auth/creds.json') &&!pairingSent) {
+        pairingSent = true;
+        await new Promise(resolve => setTimeout(resolve, 8000)); // Subiri 8sec
         try {
             const code = await sock.requestPairingCode(OWNER_NUMBER);
             console.log('\n╭─────────────────────╮');
@@ -38,21 +41,32 @@ async function startBot() {
             console.log(`CODE: ${code}`);
             console.log('Nenda WhatsApp > Settings > Linked Devices > Link Device\n');
         } catch (err) {
-            console.log('Pairing code error:', err);
+            console.log('Pairing code error:', err.message);
+            pairingSent = false; // Ijaribu tena kama imefail
         }
     }
 
     sock.ev.on('connection.update', (update) => {
         const { connection, lastDisconnect } = update;
+
         if (connection === 'open') {
             console.log(`✅ ${BOT_NAME} IS ONLINE`);
             console.log(`👑 Owner: ${OWNER_NAME}`);
             console.log(`📱 Number: ${OWNER_NUMBER}`);
         }
+
         if (connection === 'close') {
-            const shouldReconnect = lastDisconnect.error?.output?.statusCode!== DisconnectReason.loggedOut;
+            const statusCode = lastDisconnect.error?.output?.statusCode;
+            const shouldReconnect = statusCode!== DisconnectReason.loggedOut;
+
             console.log('Connection closed, reconnecting...', shouldReconnect);
-            if (shouldReconnect) startBot();
+
+            // Reconnect tu kama tumesha-pair na sio 428 error
+            if (shouldReconnect && pairingSent && statusCode!== 428) {
+                setTimeout(() => startBot(), 10000); // Subiri 10sec
+            } else if (statusCode === 428) {
+                console.log('428 Error: Futa auth folder + restart bot');
+            }
         }
     });
 
