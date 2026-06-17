@@ -6,31 +6,29 @@ const pino = require('pino');
 const fs = require('fs');
 
 const BOT_NAME = process.env.BOT_NAME || 'MOMO XMD';
-const OWNER_NAME = process.env.OWNER_NAME || 'MOMO47';
 const OWNER_NUMBER = process.env.OWNER_NUMBER || '255765409584';
 const PREFIX = '.';
-
-let hasPaired = false;
-let pairingAttempt = false;
 
 async function startBot() {
     const { state, saveCreds } = await useMultiFileAuthState('./auth');
 
     const sock = makeWASocket({
         logger: pino({ level: 'silent' }),
-        browser: Browsers.macOS('Safari'),
+        browser: ['Ubuntu', 'Chrome', '20.0.04'], // Hii inasaidia WhatsApp isishuku
         auth: state,
         printQRInTerminal: false,
+        connectTimeoutMs: 60000, // Ongezeka timeout
+        defaultQueryTimeoutMs: 60000
     });
 
-    if (!fs.existsSync('./auth/creds.json') &&!pairingAttempt) {
-        pairingAttempt = true;
-        await new Promise(resolve => setTimeout(resolve, 10000));
+    if (!fs.existsSync('./auth/creds.json')) {
+        await new Promise(resolve => setTimeout(resolve, 20000)); // Subiri 20sec kabla ya code
 
         try {
             const code = await sock.requestPairingCode(OWNER_NUMBER);
             console.log(`\nCODE: ${code.match(/.{1,4}/g).join('-')}\n`);
-            console.log('Code itakuwa hai kwa dakika 5. Pair haraka!');
+            console.log('Namba: ' + OWNER_NUMBER);
+            console.log('Nenda WhatsApp > Link Device > Weka namba hii hapo juu');
         } catch (err) {
             console.log('Error:', err.message);
         }
@@ -41,15 +39,11 @@ async function startBot() {
 
         if (connection === 'open') {
             console.log(`${BOT_NAME} ONLINE`);
-            hasPaired = true;
-            pairingAttempt = false;
         }
 
         if (connection === 'close') {
             const statusCode = lastDisconnect.error?.output?.statusCode;
-            if (statusCode === DisconnectReason.loggedOut) {
-                console.log('Logged out');
-            } else {
+            if (statusCode!== DisconnectReason.loggedOut) {
                 setTimeout(() => startBot(), 5000);
             }
         }
@@ -62,8 +56,8 @@ async function startBot() {
         if (!text.startsWith(PREFIX)) return;
         const cmd = text.slice(PREFIX.length).trim().toLowerCase();
 
-        if (cmd === 'menu') {
-            await sock.sendMessage(msg.key.remoteJid, { text: `*${BOT_NAME} MENU*\n\n.menu\n.ping` }, { quoted: msg });
+        if (cmd === 'ping') {
+            await sock.sendMessage(msg.key.remoteJid, { text: 'Pong! ✅' }, { quoted: msg });
         }
     });
 
