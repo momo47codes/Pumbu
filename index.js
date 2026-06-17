@@ -11,6 +11,7 @@ const OWNER_NUMBER = process.env.OWNER_NUMBER || '255765409584';
 const PREFIX = '.';
 
 let hasPaired = false;
+let pairingAttempt = false;
 
 async function startBot() {
     const { state, saveCreds } = await useMultiFileAuthState('./auth');
@@ -22,15 +23,14 @@ async function startBot() {
         printQRInTerminal: false,
     });
 
-    if (!fs.existsSync('./auth/creds.json') &&!hasPaired) {
-        hasPaired = true;
-        await new Promise(resolve => setTimeout(resolve, 15000));
+    if (!fs.existsSync('./auth/creds.json') &&!pairingAttempt) {
+        pairingAttempt = true;
+        await new Promise(resolve => setTimeout(resolve, 10000));
 
         try {
             const code = await sock.requestPairingCode(OWNER_NUMBER);
             console.log(`\nCODE: ${code.match(/.{1,4}/g).join('-')}\n`);
-
-            setTimeout(() => process.exit(0), 30000);
+            console.log('Code itakuwa hai kwa dakika 5. Pair haraka!');
         } catch (err) {
             console.log('Error:', err.message);
         }
@@ -42,11 +42,14 @@ async function startBot() {
         if (connection === 'open') {
             console.log(`${BOT_NAME} ONLINE`);
             hasPaired = true;
+            pairingAttempt = false;
         }
 
         if (connection === 'close') {
             const statusCode = lastDisconnect.error?.output?.statusCode;
-            if (statusCode!== DisconnectReason.loggedOut) {
+            if (statusCode === DisconnectReason.loggedOut) {
+                console.log('Logged out');
+            } else {
                 setTimeout(() => startBot(), 5000);
             }
         }
@@ -60,12 +63,7 @@ async function startBot() {
         const cmd = text.slice(PREFIX.length).trim().toLowerCase();
 
         if (cmd === 'menu') {
-            await sock.sendMessage(msg.key.remoteJid, {
-                text: `*${BOT_NAME} MENU*\n\n.menu\n.ping`
-            }, { quoted: msg });
-        }
-        if (cmd === 'ping') {
-            await sock.sendMessage(msg.key.remoteJid, { text: 'Pong! ✅' }, { quoted: msg });
+            await sock.sendMessage(msg.key.remoteJid, { text: `*${BOT_NAME} MENU*\n\n.menu\n.ping` }, { quoted: msg });
         }
     });
 
